@@ -1,21 +1,11 @@
 // Motor Notes
 // 4000 steps/s max
-//200 steps in rotation
+// 200 steps in rotation
 
 
 //Pin Notes
 //22 and up are all digital
 //2-13 are PWM
-
-
-//Temporay Pin Numbers? Not accurate anymore
-//LED: Digital Pins at 3, 5, 6
-
-//Stepper Driver 8, 9
-
-//LCD 4, 6, 10, 11, 12, 13
-
-//Button 0,1,7
 
 
 
@@ -35,33 +25,33 @@ const float flowRateMinutes = 3.0;
 const flowRate = flowRateMinutes/60;
 
 //LCD Pins
-const int rs = 4, en = 6, d4 = 10, d5 = 11, d6 = 12, d7 = 13;
+const int rs = 42, en = 44, d4 = 46, d5 = 48, d6 = 50, d7 = 52;
 
 //Motor Bins
-const int stepPin = 8, motorOut = 9;
+const int stepPin = 2, motorDirection = 22;
 
 const int[3] red = [255, 0 , 0];
 const int[3] yellow = [255, 255, 0];
 const int[3] green = [0, 0, 255];
 
 //Buttons + Limit switch
-const int mb =  0, fb = 1, bb = 2, ls = 99;
+const int mb =  24, fb = 28, bb = 30, ls = 26;
 
 //RGB Components
-const int rp = 0, gp = 0, bp = 0;
+const int rp = 3, gp = 4, bp = 5;
 
 //TODO: How to calculate max speed
 const int maxSpeed = 40;
 
 //Setup Libraries
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-AccelStepper stepper(AccelSteppere::DRIVER, motorOut, stepPin);
+AccelStepper stepper(AccelSteppere::DRIVER, motorDirection, stepPin);
 
 void setup() {
   Serial.begin(9600);
 
   pinMode(stepPin, OUTPUT);
-  pinMode(motorOut, OUTPUT);
+  pinMode(motorDirection, OUTPUT);
 
   //configure input pins and enable the internal pull-up resistor
   pinMode(mb, INPUT_PULLUP);
