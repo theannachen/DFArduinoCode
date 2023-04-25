@@ -13,28 +13,31 @@
 #include <LiquidCrystal.h>
 #include <Math.h>
 
-// Geometry of Syringe
-const float radiusMm = 5.0;
+// Geometry of Syringe (cm)
+const float radius = 1.913/2.0;
 
 // Milliliters per minute
-const float flowRateMinutes = 3.0;
+const float flowRateMinutes = 2.0;
 
 // Milliliters per second
-const float flowRate = flowRateMinutes/60;
+const float flowRate = flowRateMinutes/60.0;
 
 const int maxSpeed = 4000;
 
 const float cmPerRevolution = 0.2;
 
-const float stepsPerRevolution = 200.0;
+int microstepping;
 
-const float surfaceArea = (sq(radiusMm) * M_PI);
+float stepsPerRevolution;
+
+const float surfaceArea = sq(radius) * M_PI;
 
 // cm/s
 const float linearSpeed = flowRate / surfaceArea;
 
 // steps/s
-const int stepSpeed = int(linearSpeed / cmPerRevolution * stepsPerRevolution);
+int stepSpeed;
+
 // LCD Pins
 const int rs = 42, en = 44, d4 = 46, d5 = 48, d6 = 50, d7 = 52;
 
@@ -42,11 +45,14 @@ const int rs = 42, en = 44, d4 = 46, d5 = 48, d6 = 50, d7 = 52;
 const int stepPin = 2, directionPin = 22;
 
 const int red[3] = { 255, 0 , 0 };
-const int yellow[3] = { 255, 255, 0 };
+const int yellow[3] = { 255, 100, 0 };
 const int green[3] = { 0, 255, 0 };
 
 //Buttons + Limit switch
 const int mb =  24, fb = 28, bb = 30, ls = 26;
+
+// Microstepping pins
+const int ms1 =  36, ms2 = 34, ms3 = 32;
 
 //RGB Components
 const int rp = 3, gp = 4, bp = 5;
@@ -62,6 +68,10 @@ void setup() {
 
   pinMode(stepPin, OUTPUT);
   pinMode(directionPin, OUTPUT);
+
+  pinMode(ms1, OUTPUT);
+  pinMode(ms2, OUTPUT);
+  pinMode(ms3, OUTPUT);
 
   //Configure input pins and enable the internal pull-up resistor
   pinMode(mb, INPUT_PULLUP);
@@ -83,14 +93,48 @@ void setup() {
   pinMode(d7, OUTPUT);
 
   stepper.setMaxSpeed(maxSpeed);
-  stepper.setSpeed(linearSpeed);
+//  stepper.setAcceleration(12000);
 
   lcd.setCursor(0,0);
   lcd.print(String(flowRate, 3));
-  lcd.print(" cm/s");
+  lcd.print(" mL/s");
 
   lcd.setCursor(0,1);
   lcd.print("Time Left: ");
+
+
+  microstepping = 5;
+  do {
+    microstepping--;
+    stepsPerRevolution = 200.0 * (1 << microstepping);
+    stepSpeed = int(linearSpeed / cmPerRevolution * stepsPerRevolution);
+    Serial.print("Microstepping: 1/");
+    Serial.print(1 << microstepping);
+    Serial.print(" Step Speed: ");
+    Serial.println(stepSpeed);
+  } while (stepSpeed > 1500 && microstepping > 1);
+
+  if (microstepping == 0) {
+    digitalWrite(ms1, LOW);
+    digitalWrite(ms2, LOW);
+    digitalWrite(ms3, LOW);
+  } else if (microstepping == 1) {
+    digitalWrite(ms1, HIGH);
+    digitalWrite(ms2, LOW);
+    digitalWrite(ms3, LOW);
+  } else if (microstepping == 2) {
+    digitalWrite(ms1, LOW);
+    digitalWrite(ms2, HIGH);
+    digitalWrite(ms3, LOW);
+  } else if (microstepping == 3) {
+    digitalWrite(ms1, HIGH);
+    digitalWrite(ms2, HIGH);
+    digitalWrite(ms3, LOW);
+  } else if (microstepping == 4) {
+    digitalWrite(ms1, HIGH);
+    digitalWrite(ms2, HIGH);
+    digitalWrite(ms3, HIGH);
+  }
 }
 
 void loop() {
@@ -114,11 +158,11 @@ void loop() {
     }
 
     if (mainVal == LOW || forwardVal == LOW) {
+      stepper.setSpeed(stepSpeed);
       stepper.runSpeed();
     } else if (backVal == LOW) {
       stepper.setSpeed(-1 * stepSpeed);
       stepper.runSpeed();
-      stepper.setSpeed(stepSpeed);
     }
   } else {
     color(red);
@@ -128,19 +172,18 @@ void loop() {
     if (backVal == LOW) {
       stepper.setSpeed(-1 * stepSpeed);
       stepper.runSpeed();
-      stepper.setSpeed(stepSpeed);
     }
   }
 
-  float stepsRemaining = stepper.currentPosition();
+  float stepsRemaining = -1 * stepper.currentPosition();
 
   int secondsRemaining = int(stepsRemaining / stepSpeed);
 
-  lcd.setCursor(1,11);
-  lcd.print(secondsRemaining);
+  lcd.setCursor(11, 1);
+  lcd.print(secondsRemaining, DEC);
 }
 
-void color(int c[]){
+void color(const int c[]){
   analogWrite(rp, c[0]);
   analogWrite(gp, c[1]);
   analogWrite(bp, c[2]);
