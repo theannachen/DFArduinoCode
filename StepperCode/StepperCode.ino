@@ -38,6 +38,8 @@ const float linearSpeed = flowRate / surfaceArea;
 // steps/s
 int stepSpeed;
 
+const int adjustSpeed = 1000;
+
 // LCD Pins
 const int rs = 42, en = 44, d4 = 46, d5 = 48, d6 = 50, d7 = 52;
 
@@ -56,7 +58,6 @@ const int ms1 =  36, ms2 = 34, ms3 = 32;
 
 //RGB Components
 const int rp = 3, gp = 4, bp = 5;
-
 
 
 // Setup Libraries
@@ -157,11 +158,14 @@ void loop() {
       color(yellow);
     }
 
-    if (mainVal == LOW || forwardVal == LOW) {
+    if (mainVal == LOW) {
       stepper.setSpeed(stepSpeed);
       stepper.runSpeed();
+    } else if (forwardVal == LOW) {
+      stepper.setSpeed(adjustSpeed);
+      stepper.runSpeed();
     } else if (backVal == LOW) {
-      stepper.setSpeed(-1 * stepSpeed);
+      stepper.setSpeed(-1 * adjustSpeed);
       stepper.runSpeed();
     }
   } else {
@@ -170,7 +174,7 @@ void loop() {
     stepper.setCurrentPosition(0);
     
     if (backVal == LOW) {
-      stepper.setSpeed(-1 * stepSpeed);
+      stepper.setSpeed(-1 * adjustSpeed);
       stepper.runSpeed();
     }
   }
